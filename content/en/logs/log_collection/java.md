@@ -99,7 +99,10 @@ For Log4j, log in JSON format by using the SLF4J module [log4j-over-slf4j][1] co
 
 Log4j 2 includes a JSON layout.
 
-1. Configure a file appender using the JSON layout in `log4j2.xml`:
+1. Configure a an appender using the JSON layout in `log4j2.xml`:
+
+    For a file appender:
+
     ```xml
     <?xml version="1.0" encoding="UTF-8"?>
     <Configuration>
@@ -116,6 +119,28 @@ Log4j 2 includes a JSON layout.
       </Loggers>
     </Configuration>
     ```
+
+    For a console appender:
+
+    ```xml
+    <?xml version="1.0" encoding="UTF-8"?>
+    <Configuration>
+
+        <Appenders>
+            <Console name="console" target="SYSTEM_OUT">
+                <JSONLayout compact="true" eventEol="true" properties="true" stacktraceAsString="true" />
+            </Console>
+        </Appenders>
+
+        <Loggers>
+            <Root level="INFO">
+                <AppenderRef ref="console"/>
+            </Root>
+
+        </Loggers>
+    </Configuration>
+    ```
+
 2. Add the JSON layout dependencies to your `pom.xml`:
     ```xml
     <dependency>
