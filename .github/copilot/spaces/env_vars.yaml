@@ -1,0 +1,96 @@
+---
+name: Environment Variables Tables
+description: >
+  Rules for managing environment variable tables in Datadog documentation
+
+rules:
+  - name: Add environment variable to existing table
+    description: >
+      Add a new environment variable entry to an existing environment
+      variable table
+    context:
+      - "Environment variable tables follow a specific markdown format"
+      - "Tables have two columns: Variable and Description"
+      - "Variable names should be in backticks and uppercase"
+      - "Required variables should be marked with '**Required**'"
+      - "Optional variables may include default values"
+    examples:
+      - name: "Standard environment variable entry"
+        before: |
+          | Variable | Description |
+          | -------- | ----------- |
+          |`DD_API_KEY`| [Datadog API Key][6] - **Required**|
+          | `DD_SITE` | [Datadog site][4] - **Required** |
+        after: |
+          | Variable | Description |
+          | -------- | ----------- |
+          |`DD_API_KEY`| [Datadog API Key][6] - **Required**|
+          | `DD_SITE` | [Datadog site][4] - **Required** |
+          | `DD_SERVICE` | Service name for unified service tagging |
+      - name: "Environment variable with default value"
+        before: |
+          | Variable | Description |
+          | -------- | ----------- |
+          |`DD_LOGS_ENABLED`| When true, send logs to Datadog. Defaults to false. |
+        after: |
+          | Variable | Description |
+          | -------- | ----------- |
+          |`DD_LOGS_ENABLED`| When true, send logs to Datadog. Defaults to false. |
+          | `DD_TRACE_ENABLED` | When true, enable tracing. Defaults to true. |
+    patterns:
+      - "| `{VARIABLE_NAME}` | {description} |"
+      - "| `{VARIABLE_NAME}` | {description} - **Required** |"
+      - >
+        "| `{VARIABLE_NAME}` | {description}. Defaults to {default_value}. |"
+
+  - name: Create new environment variables table
+    description: >
+      Create a new environment variables table section with proper formatting
+    context:
+      - "Environment variable sections should have a clear heading"
+      - "Tables must include proper markdown formatting"
+      - >
+        "Variable names should be descriptive and follow DD_ prefix
+        convention for Datadog variables"
+      - >
+        "Descriptions should be clear and include links to relevant
+        documentation when applicable"
+    examples:
+      - name: "New environment variables section"
+        template: |
+          ### Environment Variables
+
+          | Variable | Description |
+          | -------- | ----------- |
+          |`DD_API_KEY`| [Datadog API Key][1] - **Required**|
+          | `DD_SITE` | [Datadog site][2] - **Required** |
+          | `DD_SERVICE` | See [Unified Service Tagging][3] |
+          | `DD_VERSION` | See [Unified Service Tagging][3] |
+          | `DD_ENV` | See [Unified Service Tagging][3] |
+      - name: "Minimal environment variables table"
+        template: |
+          | Variable | Description |
+          | -------- | ----------- |
+          | `{VARIABLE_NAME}` | {description} |
+
+  - name: Format environment variable descriptions
+    description: >
+      Ensure environment variable descriptions follow consistent formatting
+    context:
+      - "Required variables must be marked with '**Required**'"
+      - "Include links to relevant documentation using markdown link syntax"
+      - "Boolean variables should specify the behavior for true/false values"
+      - "Variables with defaults should state the default value"
+    patterns:
+      - "**Required** - for mandatory environment variables"
+      - "[Link Text][reference] - for documentation links"
+      - "When true/false, {behavior description}"
+      - "Defaults to {value}"
+      - "See [Unified Service Tagging][reference]"
+
+validation:
+  - "Variable names must be in backticks"
+  - "Table headers must be '| Variable | Description |'"
+  - "Table separator must be '| -------- | ----------- |'"
+  - "Required variables must include '**Required**'"
+  - "Links should use markdown reference format [text][ref]"
