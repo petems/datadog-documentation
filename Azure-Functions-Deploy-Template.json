@@ -1,0 +1,243 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "functionAppName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Azure Function App"
+      },
+      "minLength": 2,
+      "maxLength": 60
+    },
+    "hostingPlanName": {
+      "type": "string",
+      "defaultValue": "[concat(parameters('functionAppName'), '-plan')]",
+      "metadata": {
+        "description": "Name of the hosting plan"
+      }
+    },
+    "storageAccountName": {
+      "type": "string",
+      "defaultValue": "[concat(uniqueString(resourceGroup().id), 'storage')]",
+      "metadata": {
+        "description": "Name of the storage account"
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Location for all resources"
+      }
+    },
+    "hostingPlanSku": {
+      "type": "string",
+      "defaultValue": "Y1",
+      "allowedValues": [
+        "Y1",
+        "EP1",
+        "EP2",
+        "EP3",
+        "P1",
+        "P2",
+        "P3"
+      ],
+      "metadata": {
+        "description": "Hosting plan SKU"
+      }
+    },
+    "runtime": {
+      "type": "string",
+      "defaultValue": "node",
+      "allowedValues": [
+        "node",
+        "python",
+        "java"
+      ],
+      "metadata": {
+        "description": "Runtime stack"
+      }
+    },
+    "runtimeVersion": {
+      "type": "string",
+      "defaultValue": "~18",
+      "metadata": {
+        "description": "Runtime version"
+      }
+    },
+    "ddApiKey": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Your Datadog API Key"
+      }
+    },
+    "ddSite": {
+      "type": "string",
+      "defaultValue": "datadoghq.com",
+      "allowedValues": [
+        "datadoghq.com",
+        "datadoghq.eu",
+        "us3.datadoghq.com",
+        "us5.datadoghq.com",
+        "ap1.datadoghq.com",
+        "ddog-gov.com"
+      ],
+      "metadata": {
+        "description": "Your Datadog Site"
+      }
+    },
+    "ddService": {
+      "type": "string",
+      "defaultValue": "[parameters('functionAppName')]",
+      "metadata": {
+        "description": "Service name for Datadog APM"
+      }
+    },
+    "ddEnv": {
+      "type": "string",
+      "defaultValue": "production",
+      "metadata": {
+        "description": "Environment name for Datadog APM"
+      }
+    },
+    "ddVersion": {
+      "type": "string",
+      "defaultValue": "1.0.0",
+      "metadata": {
+        "description": "Version for Datadog APM"
+      }
+    }
+  },
+  "variables": {
+    "functionAppResourceId": "[resourceId('Microsoft.Web/sites', parameters('functionAppName'))]",
+    "storageAccountId": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]",
+    "hostingPlanResourceId": "[resourceId('Microsoft.Web/serverfarms', parameters('hostingPlanName'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2022-09-01",
+      "name": "[parameters('storageAccountName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "kind": "StorageV2"
+    },
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2022-09-01",
+      "name": "[parameters('hostingPlanName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "[parameters('hostingPlanSku')]"
+      },
+      "properties": {
+        "reserved": "[if(equals(parameters('runtime'), 'node'), false, true)]"
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2022-09-01",
+      "name": "[parameters('functionAppName')]",
+      "location": "[parameters('location')]",
+      "kind": "functionapp",
+      "dependsOn": [
+        "[variables('hostingPlanResourceId')]",
+        "[variables('storageAccountId')]"
+      ],
+      "properties": {
+        "serverFarmId": "[variables('hostingPlanResourceId')]",
+        "siteConfig": {
+          "appSettings": [
+            {
+              "name": "AzureWebJobsStorage",
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountId'), '2022-09-01').keys[0].value)]"
+            },
+            {
+              "name": "FUNCTIONS_EXTENSION_VERSION",
+              "value": "~4"
+            },
+            {
+              "name": "FUNCTIONS_WORKER_RUNTIME",
+              "value": "[parameters('runtime')]"
+            },
+            {
+              "name": "WEBSITE_NODE_DEFAULT_VERSION",
+              "value": "[parameters('runtimeVersion')]"
+            },
+            {
+              "name": "DD_API_KEY",
+              "value": "[parameters('ddApiKey')]"
+            },
+            {
+              "name": "DD_SITE",
+              "value": "[parameters('ddSite')]"
+            },
+            {
+              "name": "DD_SERVICE",
+              "value": "[parameters('ddService')]"
+            },
+            {
+              "name": "DD_ENV",
+              "value": "[parameters('ddEnv')]"
+            },
+            {
+              "name": "DD_VERSION",
+              "value": "[parameters('ddVersion')]"
+            },
+            {
+              "name": "DD_TRACE_ENABLED",
+              "value": "true"
+            },
+            {
+              "name": "DD_LOGS_INJECTION",
+              "value": "true"
+            },
+            {
+              "name": "DD_RUNTIME_METRICS_ENABLED",
+              "value": "true"
+            },
+            {
+              "name": "DD_MERGE_XRAY_TRACES",
+              "value": "false"
+            },
+            {
+              "name": "DD_COLD_START_TRACING",
+              "value": "true"
+            },
+            {
+              "name": "DD_MIN_COLD_START_DURATION",
+              "value": "3"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "functionAppName": {
+      "type": "string",
+      "value": "[parameters('functionAppName')]"
+    },
+    "functionAppUrl": {
+      "type": "string",
+      "value": "[concat('https://', reference(variables('functionAppResourceId')).defaultHostName)]"
+    },
+    "datadogConfiguration": {
+      "type": "object",
+      "value": {
+        "service": "[parameters('ddService')]",
+        "environment": "[parameters('ddEnv')]",
+        "version": "[parameters('ddVersion')]",
+        "site": "[parameters('ddSite')]",
+        "runtime": "[parameters('runtime')]"
+      }
+    },
+    "nextSteps": {
+      "type": "string",
+      "value": "Deploy your function code with the appropriate Datadog dependencies (ddtrace, @datadog/serverless-compat, etc.) to complete the setup."
+    }
+  }
+}
